@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proro V2 - ロボットプログラミング</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+    --border: #30363d; --accent: #58a6ff; --accent2: #3fb950;
+    --accent3: #f78166; --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Meiryo',sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  header { display:flex; align-items:center; gap:14px; padding:10px 20px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .logo { width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--bg); }
+  h1 { font-size:20px;font-weight:700; } h1 span { color:var(--accent); }
+  .header-sub { font-size:12px;color:var(--text2);margin-left:4px; }
+  .status-bar { margin-left:auto;display:flex;gap:16px;align-items:center;font-size:12px;color:var(--text2); }
+  .dot { width:7px;height:7px;border-radius:50%;background:var(--text3); }
+  .dot.running { background:var(--accent2);animation:pulse 1s infinite; }
+  .dot.error { background:var(--accent3); }
+  .dot.ok { background:var(--accent2); }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+  main { display:grid;grid-template-columns:340px 1fr 220px;flex:1;overflow:hidden; }
+  .panel { border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden; }
+  .panel-header { padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;gap:8px; }
+  .tab-bar { display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto; }
+  .tab { padding:8px 16px;font-size:12px;color:var(--text2);cursor:pointer;border-right:1px solid var(--border);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s; }
+  .tab:hover { color:var(--text); }
+  .tab.active { color:var(--accent);border-bottom-color:var(--accent);background:var(--surface2); }
+  .editor-wrapper { flex:1;display:flex;overflow:hidden; }
+  .line-numbers { width:38px;background:var(--surface);border-right:1px solid var(--border);padding:10px 0;font-size:12px;line-height:1.6;color:var(--text3);text-align:right;font-family:'Consolas','Courier New',monospace;overflow:hidden;user-select:none;flex-shrink:0; }
+  .line-numbers div { padding-right:8px; }
+  textarea#editor { flex:1;background:var(--surface2);color:var(--text);border:none;outline:none;resize:none;font-family:'Consolas','Courier New',monospace;font-size:13px;line-height:1.6;padding:10px 12px;caret-color:var(--accent);overflow-y:auto;overflow-x:auto;white-space:pre;tab-size:2; }
+  textarea#editor::selection { background:#388bfd33; }
+  .sample-bar { padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:var(--surface);flex-shrink:0; }
+  .sample-btn { padding:3px 10px;border:1px solid var(--border);border-radius:12px;font-size:11px;cursor:pointer;color:var(--text2);background:transparent;transition:all .12s;font-family:inherit; }
+  .sample-btn:hover { border-color:var(--accent);color:var(--accent); }
+  .toolbar { padding:10px 12px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap; }
+  .btn { padding:6px 14px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;font-family:inherit;font-weight:500; }
+  .btn-primary { background:var(--accent);color:var(--bg);border-color:var(--accent); }
+  .btn-primary:hover { background:#79c0ff; }
+  .btn-success { background:transparent;color:var(--accent2);border-color:var(--accent2); }
+  .btn-success:hover { background:#3fb95022; }
+  .btn-default { background:transparent;color:var(--text2);border-color:var(--border); }
+  .btn-default:hover { color:var(--text);background:var(--surface2); }
+  .btn-danger { background:transparent;color:var(--accent3);border-color:var(--accent3); }
+  .btn-danger:hover { background:#f7816622; }
+  .btn:disabled { opacity:.4;cursor:not-allowed; }
+  .speed-control { display:flex;align-items:center;gap:6px;margin-left:auto; }
+  .speed-control label { font-size:11px;color:var(--text2); }
+  .speed-control input[type=range] { width:70px;accent-color:var(--accent); }
+  .sim-panel { grid-column:2;display:flex;flex-direction:column;overflow:hidden; }
+  .canvas-wrapper { flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative; }
+  canvas#sim { border:1px solid var(--border);border-radius:4px;max-width:100%;max-height:100%; }
+  .sim-controls { padding:10px 14px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0; }
+  .step-info { margin-left:auto;font-size:11px;color:var(--text2);font-family:'Consolas',monospace; }
+  .info-panel { grid-column:3;border-right:none; }
+  .state-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px; }
+  .state-item { background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px; }
+  .state-label { font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px; }
+  .state-value { font-size:18px;font-weight:700;font-family:'Consolas',monospace;color:var(--accent);margin-top:2px; }
+  .state-unit { font-size:10px;color:var(--text3); }
+  .section { padding:0 12px 12px; }
+  .section-title { font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px; }
+  .cmd-list { display:flex;flex-direction:column;gap:4px; }
+  .cmd-item { padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:'Consolas',monospace;cursor:pointer;transition:all .12s;color:var(--text2); }
+  .cmd-item:hover { border-color:var(--accent);color:var(--accent); }
+  .cmd-item .cmd-name { color:var(--accent);font-weight:600; }
+  .cmd-item .cmd-desc { color:var(--text3);font-size:10px;font-family:'Segoe UI',sans-serif;display:block;margin-top:2px; }
+  .log-area { flex:1;overflow-y:auto;padding:8px;font-family:'Consolas',monospace;font-size:11px;background:var(--bg);border-top:1px solid var(--border);min-height:80px; }
+  .log-line { padding:2px 4px;border-radius:3px;line-height:1.5; }
+  .log-line.info { color:var(--text2); }
+  .log-line.success { color:var(--accent2); }
+  .log-line.error { color:var(--accent3);background:#f7816611; }
+  .log-line.step { color:var(--accent); }
+  #toast { position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;pointer-events:none;opacity:0;transition:opacity .2s;z-index:1000; }
+  #toast.show { opacity:1; }
+  #toast.success { background:#3fb95022;border:1px solid var(--accent2);color:var(--accent2); }
+  #toast.error { background:#f7816622;border:1px solid var(--accent3);color:var(--accent3); }
+  #progress { height:2px;background:var(--accent);width:0%;transition:width .1s;position:absolute;top:0;left:0;right:0; }
+  .divider { width:1px;height:20px;background:var(--border); }
+  ::-webkit-scrollbar { width:6px;height:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--text3); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">P</div>
+  <div><h1>Proro <span>V2</span></h1></div>
+  <span class="header-sub">ロボットプログラミング シミュレーター</span>
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:5px">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">待機中</span>
+    </div>
+    <span id="pos-display" style="font-family:'Consolas',monospace;font-size:11px;"></span>
+  </div>
+</header>
+<main>
+  <!-- LEFT: EDITOR -->
+  <div class="panel">
+    <div class="panel-header"><span>📝</span> コードエディタ</div>
+    <div class="tab-bar" id="tab-bar">
+      <div class="tab active" data-idx="0">main.cpp</div>
+      <div class="tab" data-idx="1">課題1</div>
+      <div class="tab" data-idx="2">課題2</div>
+      <div class="tab" data-idx="3">課題3</div>
+    </div>
+    <div class="sample-bar">
+      <span style="font-size:11px;color:var(--text3);align-self:center">サンプル:</span>
+      <button class="sample-btn" data-sample="square">正方形</button>
+      <button class="sample-btn" data-sample="circle">円</button>
+      <button class="sample-btn" data-sample="spiral">螺旋</button>
+      <button class="sample-btn" data-sample="zigzag">ジグザグ</button>
+      <button class="sample-btn" data-sample="sensor">センサー</button>
+      <button class="sample-btn" data-sample="star">星</button>
+    </div>
+    <div class="editor-wrapper">
+      <div class="line-numbers" id="line-numbers"></div>
+      <textarea id="editor" spellcheck="false" autocomplete="off"></textarea>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-primary" id="btn-run">▶ 実行</button>
+      <button class="btn btn-success" id="btn-step">⏭ ステップ</button>
+      <button class="btn btn-default" id="btn-step-next" disabled>→ 次へ</button>
+      <div class="divider"></div>
+      <button class="btn btn-danger" id="btn-reset">↺ リセット</button>
+      <div class="speed-control">
+        <label>速度:</label>
+        <input type="range" id="anim-speed" min="1" max="10" value="5">
+      </div>
+    </div>
+  </div>
+  <!-- CENTER: CANVAS -->
+  <div class="sim-panel">
+    <div class="panel-header"><span>🤖</span> シミュレーション</div>
+    <div class="canvas-wrapper">
+      <div id="progress"></div>
+      <canvas id="sim" width="600" height="420"></canvas>
+    </div>
+    <div class="sim-controls">
+      <span style="font-size:12px;color:var(--text2)">軌跡</span>
+      <input type="checkbox" id="show-trail" checked>
+      <div class="divider"></div>
+      <span style="font-size:12px;color:var(--text2)">グリッド</span>
+      <input type="checkbox" id="show-grid" checked>
+      <div class="step-info" id="step-info">ステップ: --</div>
+    </div>
+  </div>
+  <!-- RIGHT: INFO -->
+  <div class="panel info-panel">
+    <div class="panel-header"><span>📊</span> 状態</div>
+    <div class="state-grid">
+      <div class="state-item"><div class="state-label">X 座標</div><div class="state-value" id="val-x">300</div><div class="state-unit">px</div></div>
+      <div class="state-item"><div class="state-label">Y 座標</div><div class="state-value" id="val-y">210</div><div class="state-unit">px</div></div>
+      <div class="state-item"><div class="state-label">角度</div><div class="state-value" id="val-angle">0</div><div class="state-unit">°</div></div>
+      <div class="state-item"><div class="state-label">速度</div><div class="state-value" id="val-speed">50</div><div class="state-unit">%</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">コマンド一覧</div>
+      <div class="cmd-list">
+        <div class="cmd-item" data-insert="forward(100);"><span class="cmd-name">forward(距離)</span><span class="cmd-desc">前進する</span></div>
+        <div class="cmd-item" data-insert="backward(100);"><span class="cmd-name">backward(距離)</span><span class="cmd-desc">後退する</span></div>
+        <div class="cmd-item" data-insert="turnLeft(90);"><span class="cmd-name">turnLeft(角度)</span><span class="cmd-desc">左に回転</span></div>
+        <div class="cmd-item" data-insert="turnRight(90);"><span class="cmd-name">turnRight(角度)</span><span class="cmd-desc">右に回転</span></div>
+        <div class="cmd-item" data-insert="setSpeed(50);"><span class="cmd-name">setSpeed(速度)</span><span class="cmd-desc">速度設定 (1-100)</span></div>
+        <div class="cmd-item" data-insert="objectSensor();"><span class="cmd-name">objectSensor()</span><span class="cmd-desc">前方障害物を検知</span></div>
+        <div class="cmd-item" data-insert="for (int i = 0; i < 4; i++) {\n  forward(100);\n}"><span class="cmd-name">for ループ</span><span class="cmd-desc">繰り返し処理</span></div>
+        <div class="cmd-item" data-insert="if (objectSensor()) {\n  turnRight(90);\n}"><span class="cmd-name">if 文</span><span class="cmd-desc">条件分岐</span></div>
+      </div>
+    </div>
+    <div class="panel-header" style="margin-top:auto"><span>💬</span> ログ</div>
+    <div class="log-area" id="log"></div>
+  </div>
+</main>
+<div id="toast"></div>
+<script>
+const SAMPLES={
+  square:`// 正方形を描く\nfor (int i = 0; i < 4; i++) {\n  forward(100);\n  turnRight(90);\n}`,
+  circle:`// 正十二角形（円に近い）\nfor (int i = 0; i < 12; i++) {\n  forward(60);\n  turnRight(30);\n}`,
+  spiral:`// 螺旋を描く\nfor (int i = 0; i < 20; i++) {\n  forward(20 + i * 8);\n  turnRight(35);\n}`,
+  zigzag:`// ジグザグ移動\nfor (int i = 0; i < 6; i++) {\n  forward(80);\n  turnRight(45);\n  forward(80);\n  turnLeft(45);\n}`,
+  sensor:`// センサーで壁を回避\nforward(150);\nif (objectSensor()) {\n  turnRight(90);\n  forward(80);\n  turnLeft(90);\n  forward(100);\n}`,
+  star:`// 星形を描く\nfor (int i = 0; i < 5; i++) {\n  forward(120);\n  turnRight(144);\n}`,
+};
+
+const TT={IF:'IF',ELSE:'ELSE',FOR:'FOR',WHILE:'WHILE',INT:'INT',VOID:'VOID',IDENTIFIER:'IDENTIFIER',NUMBER:'NUMBER',STRING:'STRING',LPAREN:'LPAREN',RPAREN:'RPAREN',LBRACE:'LBRACE',RBRACE:'RBRACE',SEMICOLON:'SEMICOLON',COMMA:'COMMA',ASSIGN:'ASSIGN',EQ:'EQ',NEQ:'NEQ',LT:'LT',GT:'GT',LTE:'LTE',GTE:'GTE',PLUS:'PLUS',MINUS:'MINUS',MUL:'MUL',DIV:'DIV',MOD:'MOD',AND:'AND',OR:'OR',NOT:'NOT',INCREMENT:'INCREMENT',DECREMENT:'DECREMENT',EOF:'EOF',NEWLINE:'NEWLINE'};
+
+function tokenize(input){
+  const tokens=[];let pos=0,line=1;
+  const ch=()=>pos<input.length?input[pos]:null;
+  const peek=(n=1)=>pos+n<input.length?input[pos+n]:null;
+  const adv=()=>{if(ch()==='\n')line++;pos++;};
+  const KW={if:TT.IF,else:TT.ELSE,for:TT.FOR,while:TT.WHILE,int:TT.INT,void:TT.VOID};
+  while(pos<input.length){
+    while(ch()&&ch()!=='\n'&&/\s/.test(ch()))adv();
+    if(ch()==='/'&&peek()==='/'){while(ch()&&ch()!=='\n')adv();continue;}
+    const c=ch();if(!c)break;const l=line;
+    if(/\d/.test(c)){let s='';while(ch()&&/\d/.test(ch())){s+=ch();adv();}tokens.push({type:TT.NUMBER,value:parseInt(s,10),line:l});}
+    else if(/[a-zA-Z_]/.test(c)){let s='';while(ch()&&/[a-zA-Z0-9_]/.test(ch())){s+=ch();adv();}tokens.push({type:KW[s]||TT.IDENTIFIER,value:s,line:l});}
+    else if(c==='"'||c==="'"){adv();let s='';while(ch()&&ch()!==c){s+=ch();adv();}if(ch())adv();tokens.push({type:TT.STRING,value:s,line:l});}
+    else{
+      const ops=[['==',TT.EQ],['!=',TT.NEQ],['<=',TT.LTE],['>=',TT.GTE],['++',TT.INCREMENT],['--',TT.DECREMENT],['&&',TT.AND],['||',TT.OR]];
+      let matched=false;
+      for(const[sym,tt]of ops){if(c===sym[0]&&peek()===sym[1]){tokens.push({type:tt,value:sym,line:l});adv();adv();matched=true;break;}}
+      if(!matched){const single={'(':TT.LPAREN,')':TT.RPAREN,'{':TT.LBRACE,'}':TT.RBRACE,';':TT.SEMICOLON,',':TT.COMMA,'=':TT.ASSIGN,'<':TT.LT,'>':TT.GT,'+':TT.PLUS,'-':TT.MINUS,'*':TT.MUL,'/':TT.DIV,'%':TT.MOD,'!':TT.NOT,'\n':TT.NEWLINE};
+      if(single[c])tokens.push({type:single[c],value:c,line:l});adv();}
+    }
+  }
+  tokens.push({type:TT.EOF,value:'',line});return tokens;
+}
+
+function parse(tokens){
+  let pos=0;
+  const cur=()=>tokens[pos]||tokens[tokens.length-1];
+  const adv=()=>pos++;
+  const skip=()=>{while(cur().type===TT.NEWLINE)adv();};
+  const expect=(t)=>{const tok=cur();if(tok.type!==t)throw{message:`${t}が必要ですが${tok.type}がありました(${tok.line}行目)`,line:tok.line};adv();return tok;};
+  function pS(){skip();const t=cur();if(t.type===TT.IF)return pIf();if(t.type===TT.FOR)return pFor();if(t.type===TT.WHILE)return pWh();if(t.type===TT.LBRACE)return pBl();if(t.type===TT.IDENTIFIER||t.type===TT.INT)return pES();adv();return null;}
+  function pIf(){const l=cur().line;expect(TT.IF);expect(TT.LPAREN);const cond=pEx();expect(TT.RPAREN);skip();const then=pS();let els=null;skip();if(cur().type===TT.ELSE){adv();skip();els=pS();}return{type:'If',cond,then,els,l};}
+  function pFor(){const l=cur().line;expect(TT.FOR);expect(TT.LPAREN);let init=null;if(cur().type===TT.INT){adv();const name=cur().value;adv();if(cur().type===TT.ASSIGN){adv();const v=pLO();init={type:'Assign',name,value:v,l};}}else{init=pEx();}expect(TT.SEMICOLON);const cond=pEx();expect(TT.SEMICOLON);const upd=pEx();expect(TT.RPAREN);skip();const body=pS();return{type:'For',init,cond,upd,body,l};}
+  function pWh(){const l=cur().line;expect(TT.WHILE);expect(TT.LPAREN);const cond=pEx();expect(TT.RPAREN);skip();const body=pS();return{type:'While',cond,body,l};}
+  function pBl(){const l=cur().line;expect(TT.LBRACE);skip();const stmts=[];while(cur().type!==TT.RBRACE&&cur().type!==TT.EOF){skip();if(cur().type===TT.RBRACE)break;const s=pS();if(s)stmts.push(s);skip();}expect(TT.RBRACE);return{type:'Block',stmts,l};}
+  function pES(){const e=pEx();if(cur().type===TT.SEMICOLON)adv();return{type:'ExprStmt',expr:e,l:e.l||0};}
+  function pEx(){if(cur().type===TT.INT){adv();const name=cur().value;adv();if(cur().type===TT.ASSIGN){adv();const v=pEx();return{type:'Assign',name,value:v,l:cur().line};}return{type:'Ident',name,l:cur().line};}return pLO();}
+  function pLO(){let l=pLA();while(cur().type===TT.OR){adv();const r=pLA();l={type:'BinOp',op:'||',l,r};}return l;}
+  function pLA(){let l=pEq();while(cur().type===TT.AND){adv();const r=pEq();l={type:'BinOp',op:'&&',l,r};}return l;}
+  function pEq(){let l=pCm();while(cur().type===TT.EQ||cur().type===TT.NEQ){const op=cur().value;adv();const r=pCm();l={type:'BinOp',op,l,r};}return l;}
+  function pCm(){let l=pAd();while([TT.LT,TT.GT,TT.LTE,TT.GTE].includes(cur().type)){const op=cur().value;adv();const r=pAd();l={type:'BinOp',op,l,r};}return l;}
+  function pAd(){let l=pMl();while(cur().type===TT.PLUS||cur().type===TT.MINUS){const op=cur().value;adv();const r=pMl();l={type:'BinOp',op,l,r};}return l;}
+  function pMl(){let l=pUn();while(cur().type===TT.MUL||cur().type===TT.DIV||cur().type===TT.MOD){const op=cur().value;adv();const r=pUn();l={type:'BinOp',op,l,r};}return l;}
+  function pUn(){if(cur().type===TT.NOT||cur().type===TT.MINUS){const op=cur().value;adv();return{type:'UnOp',op,operand:pUn()};}return pPo();}
+  function pPo(){let e=pPr();while(cur().type===TT.INCREMENT||cur().type===TT.DECREMENT){const op=cur().value;adv();e={type:'PostOp',op,operand:e};}return e;}
+  function pPr(){const t=cur(),l=t.line;if(t.type===TT.NUMBER){adv();return{type:'Num',value:t.value,l};}if(t.type===TT.IDENTIFIER){const name=t.value;adv();if(cur().type===TT.LPAREN){adv();const args=[];while(cur().type!==TT.RPAREN&&cur().type!==TT.EOF){args.push(pEx());if(cur().type===TT.COMMA)adv();}expect(TT.RPAREN);return{type:'Call',name,args,l};}if(cur().type===TT.ASSIGN){adv();const v=pEx();return{type:'Assign',name,value:v,l};}return{type:'Ident',name,l};}if(t.type===TT.LPAREN){adv();const e=pEx();expect(TT.RPAREN);return e;}throw{message:`予期しないトークン:${t.type}(${t.line}行目)`,line:t.line};}
+  skip();const stmts=[];while(cur().type!==TT.EOF){skip();if(cur().type===TT.EOF)break;const s=pS();if(s)stmts.push(s);skip();}return stmts;
+}
+
+const CW=600,CH=420;
+function execute(code){
+  let state={x:CW/2,y:CH/2,angle:0,speed:50};
+  const vars=new Map(),steps=[];let counter=0;const LIMIT=20000;
+  const tokens=tokenize(code);const ast=parse(tokens);
+  function ev(e){
+    if(!e)return 0;
+    if(e.type==='Num')return e.value;
+    if(e.type==='Ident')return vars.get(e.name)||0;
+    if(e.type==='Assign'){const v=ev(e.value);vars.set(e.name,v);return v;}
+    if(e.type==='BinOp'){const l=ev(e.l),r=ev(e.r);switch(e.op){case'+':return l+r;case'-':return l-r;case'*':return l*r;case'/':return r?Math.floor(l/r):0;case'%':return l%r;case'==':return l===r?1:0;case'!=':return l!==r?1:0;case'<':return l<r?1:0;case'>':return l>r?1:0;case'<=':return l<=r?1:0;case'>=':return l>=r?1:0;case'&&':return(l&&r)?1:0;case'||':return(l||r)?1:0;}return 0;}
+    if(e.type==='UnOp'){const v=ev(e.operand);return e.op==='-'?-v:v?0:1;}
+    if(e.type==='PostOp'&&e.operand.type==='Ident'){const n=e.operand.name,c=vars.get(n)||0;vars.set(n,e.op==='++'?c+1:c-1);return c;}
+    if(e.type==='Call')return ec(e);
+    return 0;
+  }
+  function ec(e){
+    if(++counter>LIMIT)throw{message:'実行ステップ数が上限に達しました（無限ループの可能性）'};
+    const args=e.args.map(ev),name=e.name;
+    switch(name){
+      case'forward':{const d=args[0]||0,rad=state.angle*Math.PI/180;state.x=Math.max(0,Math.min(CW,state.x+Math.sin(rad)*d));state.y=Math.max(0,Math.min(CH,state.y-Math.cos(rad)*d));break;}
+      case'backward':{const d=args[0]||0,rad=state.angle*Math.PI/180;state.x=Math.max(0,Math.min(CW,state.x-Math.sin(rad)*d));state.y=Math.max(0,Math.min(CH,state.y+Math.cos(rad)*d));break;}
+      case'turnLeft':state.angle=((state.angle-(args[0]||90))%360+360)%360;break;
+      case'turnRight':state.angle=(state.angle+(args[0]||90))%360;break;
+      case'setSpeed':state.speed=Math.max(1,Math.min(100,args[0]||50));break;
+      case'setAngle':state.angle=(args[0]||0)%360;break;
+      case'wait':break;
+      case'objectSensor':{const rad=state.angle*Math.PI/180,cx=state.x+Math.sin(rad)*50,cy=state.y-Math.cos(rad)*50;const s=cx<0||cx>CW||cy<0||cy>CH;steps.push({cmd:name,state:{...state},line:e.l,sensor:s});return s?1:0;}
+      default:throw{message:`不明な関数: "${name}" (${e.l}行目)`,line:e.l};
+    }
+    steps.push({cmd:name,state:{...state},line:e.l,sensor:false});return 0;
+  }
+  function en(n){
+    if(!n)return;if(++counter>LIMIT)throw{message:'実行ステップ数が上限に達しました'};
+    if(n.type==='ExprStmt')ev(n.expr);
+    else if(n.type==='If'){if(ev(n.cond))en(n.then);else if(n.els)en(n.els);}
+    else if(n.type==='For'){ev(n.init);let s=0;while(ev(n.cond)&&s++<LIMIT){en(n.body);ev(n.upd);}}
+    else if(n.type==='While'){let s=0;while(ev(n.cond)&&s++<LIMIT)en(n.body);}
+    else if(n.type==='Block')for(const s of n.stmts)en(s);
+  }
+  for(const node of ast)en(node);
+  return{steps,finalState:{...state}};
+}
+
+// UI
+const editor=document.getElementById('editor');
+const canvas=document.getElementById('sim');
+const ctx2=canvas.getContext('2d');
+const lnEl=document.getElementById('line-numbers');
+const logEl=document.getElementById('log');
+const stepInfoEl=document.getElementById('step-info');
+const progressEl=document.getElementById('progress');
+const INIT={x:CW/2,y:CH/2,angle:0,speed:50};
+let result=null,stepIdx=0,stepMode=false,animFrame=null,animSpeed=5;
+const tabCodes=[SAMPLES.square,SAMPLES.square,SAMPLES.spiral,SAMPLES.sensor];
+let curTab=0;
+editor.value=tabCodes[0];
+updateLN();updateState(INIT);drawScene(INIT,[]);
+
+document.getElementById('tab-bar').addEventListener('click',e=>{
+  const tab=e.target.closest('.tab');if(!tab)return;
+  tabCodes[curTab]=editor.value;curTab=parseInt(tab.dataset.idx);
+  editor.value=tabCodes[curTab];
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.idx==curTab));
+  updateLN();handleReset();
+});
+document.querySelectorAll('.sample-btn').forEach(b=>b.addEventListener('click',()=>{editor.value=SAMPLES[b.dataset.sample]||'';tabCodes[curTab]=editor.value;updateLN();handleReset();}));
+document.querySelectorAll('.cmd-item').forEach(item=>item.addEventListener('click',()=>{
+  const ins=item.dataset.insert.replace(/\\n/g,'\n');
+  const s=editor.selectionStart;editor.value=editor.value.substring(0,s)+ins+editor.value.substring(s);
+  editor.selectionStart=editor.selectionEnd=s+ins.length;editor.focus();updateLN();
+}));
+editor.addEventListener('input',updateLN);
+editor.addEventListener('scroll',()=>lnEl.scrollTop=editor.scrollTop);
+editor.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=editor.selectionStart;editor.value=editor.value.substring(0,s)+'  '+editor.value.substring(s);editor.selectionStart=editor.selectionEnd=s+2;updateLN();}});
+document.getElementById('anim-speed').addEventListener('input',e=>animSpeed=parseInt(e.target.value));
+document.getElementById('show-trail').addEventListener('change',redraw);
+document.getElementById('show-grid').addEventListener('change',redraw);
+document.getElementById('btn-run').addEventListener('click',handleRun);
+document.getElementById('btn-step').addEventListener('click',handleStepMode);
+document.getElementById('btn-step-next').addEventListener('click',handleStepNext);
+document.getElementById('btn-reset').addEventListener('click',handleReset);
+
+function updateLN(){const lines=editor.value.split('\n');lnEl.innerHTML=lines.map((_,i)=>`<div>${i+1}</div>`).join('');lnEl.scrollTop=editor.scrollTop;}
+function log(msg,type='info'){const d=document.createElement('div');d.className=`log-line ${type}`;d.textContent=msg;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;}
+function clearLog(){logEl.innerHTML='';}
+function toast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`show ${type}`;clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);}
+function setStatus(text,type=''){document.getElementById('status-text').textContent=text;document.getElementById('status-dot').className='dot'+(type?' '+type:'');}
+function updateState(s){document.getElementById('val-x').textContent=Math.round(s.x);document.getElementById('val-y').textContent=Math.round(s.y);document.getElementById('val-angle').textContent=Math.round(s.angle);document.getElementById('val-speed').textContent=Math.round(s.speed||50);document.getElementById('pos-display').textContent=`X:${Math.round(s.x)} Y:${Math.round(s.y)} θ:${Math.round(s.angle)}°`;}
+
+function handleRun(){
+  cancelAnim();stepMode=false;stepIdx=0;
+  document.getElementById('btn-step-next').disabled=true;
+  document.getElementById('btn-step').textContent='⏭ ステップ';
+  clearLog();setStatus('実行中...','running');log('▶ 実行します...','info');
+  try{
+    result=execute(editor.value);
+    log(`✓ 実行完了 — ${result.steps.length}ステップ`,'success');
+    setStatus('完了','ok');toast(`✓ 実行完了 (${result.steps.length}ステップ)`,'success');
+    result.steps.forEach((s,i)=>{
+      if(s.cmd==='objectSensor')log(`  [${i+1}] ${s.cmd}() → ${s.sensor?'障害物あり':'なし'}`,'step');
+      else log(`  [${i+1}] ${s.cmd}()`,'step');
+    });
+    startAnim();
+  }catch(err){log(`✗ エラー: ${err.message}`,'error');setStatus('エラー','error');toast(`✗ ${err.message}`,'error');result=null;drawScene(INIT,[]);}
+}
+
+function handleStepMode(){
+  if(!result){toast('先にコードを実行してください','error');return;}
+  cancelAnim();stepMode=!stepMode;stepIdx=0;
+  document.getElementById('btn-step').textContent=stepMode?'▶ 通常モード':'⏭ ステップ';
+  document.getElementById('btn-step-next').disabled=!stepMode;
+  if(stepMode){log('ステップ実行モード','info');drawStep(0);}else startAnim();
+}
+function handleStepNext(){if(!result||!stepMode)return;if(stepIdx<result.steps.length-1){stepIdx++;drawStep(stepIdx);}}
+function drawStep(idx){const s=result.steps[Math.min(idx,result.steps.length-1)];updateState(s.state);drawScene(s.state,result.steps.slice(0,idx+1));stepInfoEl.textContent=`ステップ: ${idx+1} / ${result.steps.length} — ${s.cmd}()`;}
+function handleReset(){cancelAnim();result=null;stepMode=false;stepIdx=0;document.getElementById('btn-step-next').disabled=true;document.getElementById('btn-step').textContent='⏭ ステップ';stepInfoEl.textContent='ステップ: --';updateState(INIT);setStatus('待機中');clearLog();log('リセットしました','info');drawScene(INIT,[]);}
+function redraw(){if(stepMode&&result)drawStep(stepIdx);else if(result)drawScene(result.finalState,result.steps);else drawScene(INIT,[]);}
+
+function startAnim(){
+  cancelAnim();if(!result||!result.steps.length){drawScene(result?.finalState||INIT,result?.steps||[]);return;}
+  let start=null;const steps=result.steps;const msPerStep=Math.round(800/animSpeed);const dur=Math.max(steps.length*msPerStep,400);
+  function frame(ts){
+    if(!start)start=ts;const t=Math.min((ts-start)/dur,1);
+    const idx=Math.floor(t*steps.length);const frac=(t*steps.length)-idx;
+    const cur=steps[Math.min(idx,steps.length-1)];const nxt=steps[Math.min(idx+1,steps.length-1)];
+    let st;
+    if(cur&&nxt&&frac>0){let da=nxt.state.angle-cur.state.angle;if(da>180)da-=360;if(da<-180)da+=360;st={x:cur.state.x+(nxt.state.x-cur.state.x)*frac,y:cur.state.y+(nxt.state.y-cur.state.y)*frac,angle:cur.state.angle+da*frac,speed:cur.state.speed};}
+    else st=cur?.state||INIT;
+    progressEl.style.width=(t*100)+'%';updateState(st);drawScene(st,steps.slice(0,idx+1));
+    stepInfoEl.textContent=`ステップ: ${Math.min(idx+1,steps.length)} / ${steps.length}`;
+    if(t<1)animFrame=requestAnimationFrame(frame);
+    else{progressEl.style.width='0%';updateState(result.finalState);drawScene(result.finalState,result.steps);stepInfoEl.textContent=`完了: ${steps.length}ステップ`;}
+  }
+  animFrame=requestAnimationFrame(frame);
+}
+function cancelAnim(){if(animFrame)cancelAnimationFrame(animFrame);animFrame=null;progressEl.style.width='0%';}
+
+function drawScene(state,steps){
+  const showGrid=document.getElementById('show-grid').checked;
+  const showTrail=document.getElementById('show-trail').checked;
+  ctx2.fillStyle='#0d1117';ctx2.fillRect(0,0,CW,CH);
+  if(showGrid){
+    ctx2.strokeStyle='#21262d';ctx2.lineWidth=1;
+    for(let x=0;x<=CW;x+=60){ctx2.beginPath();ctx2.moveTo(x,0);ctx2.lineTo(x,CH);ctx2.stroke();}
+    for(let y=0;y<=CH;y+=60){ctx2.beginPath();ctx2.moveTo(0,y);ctx2.lineTo(CW,y);ctx2.stroke();}
+    ctx2.strokeStyle='#30363d';ctx2.setLineDash([4,4]);
+    ctx2.beginPath();ctx2.moveTo(CW/2,0);ctx2.lineTo(CW/2,CH);ctx2.stroke();
+    ctx2.beginPath();ctx2.moveTo(0,CH/2);ctx2.lineTo(CW,CH/2);ctx2.stroke();
+    ctx2.setLineDash([]);
+  }
+  if(showTrail&&steps.length>1){
+    ctx2.strokeStyle='#58a6ff55';ctx2.lineWidth=2;ctx2.setLineDash([6,4]);
+    ctx2.beginPath();ctx2.moveTo(CW/2,CH/2);
+    for(const s of steps)ctx2.lineTo(s.state.x,s.state.y);
+    ctx2.stroke();ctx2.setLineDash([]);
+    ctx2.fillStyle='#58a6ff33';
+    for(const s of steps){ctx2.beginPath();ctx2.arc(s.state.x,s.state.y,2.5,0,Math.PI*2);ctx2.fill();}
+    ctx2.fillStyle='#3fb950';ctx2.beginPath();ctx2.arc(CW/2,CH/2,5,0,Math.PI*2);ctx2.fill();
+  }
+  drawRobot(state);
+}
+
+function drawRobot(state){
+  const x=state.x,y=state.y,a=state.angle*Math.PI/180,sz=22;
+  ctx2.save();ctx2.translate(x,y);ctx2.rotate(a);
+  ctx2.fillStyle='rgba(0,0,0,0.4)';ctx2.beginPath();ctx2.ellipse(2,4,sz/1.5,sz/3,0,0,Math.PI*2);ctx2.fill();
+  const g=ctx2.createRadialGradient(-sz/4,-sz/4,2,0,0,sz);g.addColorStop(0,'#a5d6ff');g.addColorStop(1,'#388bfd');
+  ctx2.fillStyle=g;ctx2.strokeStyle='#79c0ff';ctx2.lineWidth=1.5;
+  const r=5;ctx2.beginPath();ctx2.moveTo(-sz/2+r,-sz/2);ctx2.lineTo(sz/2-r,-sz/2);ctx2.quadraticCurveTo(sz/2,-sz/2,sz/2,-sz/2+r);ctx2.lineTo(sz/2,sz/2-r);ctx2.quadraticCurveTo(sz/2,sz/2,sz/2-r,sz/2);ctx2.lineTo(-sz/2+r,sz/2);ctx2.quadraticCurveTo(-sz/2,sz/2,-sz/2,sz/2-r);ctx2.lineTo(-sz/2,-sz/2+r);ctx2.quadraticCurveTo(-sz/2,-sz/2,-sz/2+r,-sz/2);ctx2.closePath();ctx2.fill();ctx2.stroke();
+  ctx2.fillStyle='#0d1117';ctx2.beginPath();ctx2.arc(-sz/5,-sz/5,3,0,Math.PI*2);ctx2.fill();ctx2.beginPath();ctx2.arc(sz/5,-sz/5,3,0,Math.PI*2);ctx2.fill();
+  ctx2.fillStyle='#79c0ff';ctx2.beginPath();ctx2.arc(-sz/5+1,-sz/5-1,1.2,0,Math.PI*2);ctx2.fill();ctx2.beginPath();ctx2.arc(sz/5+1,-sz/5-1,1.2,0,Math.PI*2);ctx2.fill();
+  ctx2.strokeStyle='#3fb950';ctx2.lineWidth=2;ctx2.beginPath();ctx2.moveTo(0,sz/2+4);ctx2.lineTo(0,-sz/2-8);ctx2.stroke();
+  ctx2.fillStyle='#3fb950';ctx2.beginPath();ctx2.moveTo(0,-sz/2-14);ctx2.lineTo(-4,-sz/2-6);ctx2.lineTo(4,-sz/2-6);ctx2.closePath();ctx2.fill();
+  ctx2.restore();
+}
+</script>
+</body>
+</html>
